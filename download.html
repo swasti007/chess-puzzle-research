@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Your Lichess Puzzle Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Downloading Your Data...</h1>
+    <p>If nothing happens, ensure pop-ups are allowed and try again from the main page.</p>
+    
+    <script>
+    async function handleOAuthCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+        
+        const storedState = localStorage.getItem('oauth_state');
+        if (state !== storedState) {
+            alert('State mismatch - possible security issue. Please try again.');
+            return;
+        }
+        
+        const codeVerifier = localStorage.getItem('code_verifier');
+        const clientId = 'puzzle-research-app';
+        const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html';
+        
+        // Exchange code for token
+        const tokenResponse = await fetch('https://lichess.org/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: redirectUri,
+                client_id: clientId,
+                code_verifier: codeVerifier
+            })
+        });
+        
+        if (!tokenResponse.ok) {
+            alert('Error getting token: ' + await tokenResponse.text());
+            return;
+        }
+        
+        const { access_token } = await tokenResponse.json();
+        
+        // Fetch puzzle activity (NDJSON)
+        const activityResponse = await fetch('https://lichess.org/api/puzzle/activity', {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+                Accept: 'application/x-ndjson'
+            }
+        });
+        const activityData = await activityResponse.text();
+        
+        // Fetch ratings (JSON)
+        const ratingsResponse = await fetch('https://lichess.org/api/account', {
+            headers: { Authorization: `Bearer ${access_token}` }
+        });
+        const accountData = await ratingsResponse.json();
+        const ratings = {
+            puzzle: accountData.perfs?.puzzle || {},
+            rapid: accountData.perfs?.rapid || {},
+            classical: accountData.perfs?.classical || {}
+        };
+        const ratingsJson = JSON.stringify(ratings, null, 2);
+        
+        // Create downloads
+        function downloadFile(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        downloadFile('my_lichess_puzzle_activity.ndjson', activityData, 'application/x-ndjson');
+        downloadFile('my_lichess_ratings.json', ratingsJson, 'application/json');
+        
+        document.body.innerHTML += '<p>Downloads started! Email the files to the researcher. <a href="/">Back to main page</a></p>';
+        
+        // Clean up
+        localStorage.removeItem('code_verifier');
+        localStorage.removeItem('oauth_state');
+    }
+    
+    handleOAuthCallback();
+    </script>
+</body>
+</html>
