@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Puzzle Research Volunteer Data Sharing</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; }
+        pre { background: #f4f4f4; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Volunteer Your Lichess Puzzle Activity for Academic Research</h1>
+    
+    <h2>Project Description</h2>
+    <p>This research, conducted by Swasti Sunder Das (MSc Artificial Intelligence, University of Aberdeen), supervised by Professor Nir Oren, models chess puzzle performance to estimate player strength from attempt behavior (e.g., success rates by difficulty/theme). We use public Lichess puzzle data but need anonymized attempt outcomes for analysis.</p>
+    
+    <h2>Ethics Permission</h2>
+    <p>This study has been approved by the University of Aberdeen Ethics Committee (approval reference: CERB/2026/001). We follow ethical guidelines for voluntary participation, data privacy, and anonymization, compliant with GDPR.</p>
+    
+    <h2>Consent and Participation</h2>
+    <p>By sharing your data, you consent to its use in this research. Participation is voluntary; you can limit entries (e.g., recent attempts only). Data is anonymized—no usernames or identifiers are needed. No compensation provided.</p>
+    
+    <h2>How to Withdraw Consent</h2>
+    <p>To withdraw, email swasti.sunder.das@abdn.ac.uk with a description of your submission (e.g., approximate number of attempts). We'll delete your data within 30 days. Withdrawal won't affect aggregated results.</p>
+    
+    <h2>Instructions</h2>
+    <ol>
+        <li>Generate a token at <a href="https://lichess.org/account/oauth/token">https://lichess.org/account/oauth/token</a> with "puzzle:read" and "preference:read" scopes.</li>
+        <li>Copy the script below to <code>download_puzzle_data.py</code>.</li>
+        <li>Run: <code>python download_puzzle_data.py</code>. Enter token and optional max entries.</li>
+        <li>Save the files <code>my_lichess_puzzle_activity.ndjson</code> and <code>my_lichess_ratings.json</code>.</li>
+        <li>Email both files to swasti.sunder.das@abdn.ac.uk.</li>
+    </ol>
+    
+    <h2>Python Script</h2>
+    <pre><code>import requests
+import json
+
+def download_puzzle_activity(token, max_entries=None):
+    url = "https://lichess.org/api/puzzle/activity"
+    params = {"max": max_entries} if max_entries else {}
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/x-ndjson",
+    }
+
+    with open("my_lichess_puzzle_activity.ndjson", "w", encoding="utf-8") as file:
+        response = requests.get(url, params=params, headers=headers, stream=True)
+        if response.status_code != 200:
+            print(f"Error fetching activity: {response.status_code} - {response.text}")
+            return False
+
+        for line in response.iter_lines():
+            if line:
+                activity = json.loads(line)
+                json.dump(activity, file)
+                file.write("\n")
+    
+    print("Puzzle activity download complete.")
+    return True
+
+def download_user_ratings(token):
+    url = "https://lichess.org/api/account"
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"Error fetching ratings: {response.status_code} - {response.text}")
+        return
+
+    data = response.json()
+    ratings = {
+        "puzzle": data.get("perfs", {}).get("puzzle", {}),
+        "rapid": data.get("perfs", {}).get("rapid", {}),
+        "classical": data.get("perfs", {}).get("classical", {}),
+    }
+    with open("my_lichess_ratings.json", "w", encoding="utf-8") as file:
+        json.dump(ratings, file, indent=4)
+    
+    print("User ratings snapshot saved.")
+
+if __name__ == "__main__":
+    token = input("Enter your Lichess personal access token (with 'puzzle:read' and 'preference:read' scopes): ")
+    max_entries = input("Enter max number of entries to download (optional, press Enter for all): ")
+    max_entries = int(max_entries) if max_entries else None
+    
+    if download_puzzle_activity(token, max_entries):
+        download_user_ratings(token)
+    print("Files saved: 'my_lichess_puzzle_activity.ndjson' and 'my_lichess_ratings.json'. Send both to the researcher.")</code></pre>
+    
+    <h2>Privacy and Data Use</h2>
+    <p>Your token is local-only. The files contain attempt data (e.g., dates, puzzle IDs, outcomes, puzzle ratings/themes) and rating snapshot. We'll anonymize by assigning a pseudonym and use only for research. Contact swasti.sunder.das@abdn.ac.uk or n.oren@abdn.ac.uk for questions.</p>
+    
+    <p>Thanks for supporting chess research!</p>
+</body>
+</html>
