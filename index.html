@@ -26,71 +26,58 @@
     <p>To withdraw, email swasti.sunder.das@abdn.ac.uk with a description of your submission (e.g., approximate number of attempts). We'll delete your data within 30 days. Withdrawal won't affect aggregated results.</p>
     
     <h2>Instructions</h2>
-    <ol>
-        <li>Generate a token at <a href="https://lichess.org/account/oauth/token">https://lichess.org/account/oauth/token</a> with "puzzle:read" and "preference:read" scopes.</li>
-        <li>Copy the script below to <code>download_puzzle_data.py</code>.</li>
-        <li>Run: <code>python download_puzzle_data.py</code>. Enter token and optional max entries.</li>
-        <li>Save the files <code>my_lichess_puzzle_activity.ndjson</code> and <code>my_lichess_ratings.json</code>.</li>
-        <li>Email both files to swasti.sunder.das@abdn.ac.uk.</li>
-    </ol>
-    
-    <h2>Python Script</h2>
-    <pre><code>import requests
-import json
+<p>To share your data easily without running code:</p>
+<ol>
+    <li>Click the button below to authorize with Lichess (you must be logged in there).</li>
+    <li>Grant permission for "Read puzzle activity" and "Read preferences" (ratings).</li>
+    <li>The page will fetch your data and provide download links for the two files.</li>
+    <li>Download and email them to swasti.sunder.das@abdn.ac.uk.</li>
+</ol>
+<button onclick="startOAuthFlow()">Start Data Download</button>
 
-def download_puzzle_activity(token, max_entries=None):
-    url = "https://lichess.org/api/puzzle/activity"
-    params = {"max": max_entries} if max_entries else {}
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/x-ndjson",
+<h2>Privacy Note</h2>
+<p>This runs entirely in your browser—no data is sent to any server except Lichess's API. You control what you email.</p>
+
+<script>
+function base64urlEncode(array) {
+    return btoa(String.fromCharCode.apply(null, array))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function sha256(plain) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    return crypto.subtle.digest('SHA-256', data);
+}
+
+function generateRandomString(length) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let str = '';
+    for (let i = 0; i < length; i++) {
+        str += charset.charAt(Math.floor(Math.random() * charset.length));
     }
+    return str;
+}
 
-    with open("my_lichess_puzzle_activity.ndjson", "w", encoding="utf-8") as file:
-        response = requests.get(url, params=params, headers=headers, stream=True)
-        if response.status_code != 200:
-            print(f"Error fetching activity: {response.status_code} - {response.text}")
-            return False
-
-        for line in response.iter_lines():
-            if line:
-                activity = json.loads(line)
-                json.dump(activity, file)
-                file.write("\n")
+async function startOAuthFlow() {
+    const codeVerifier = generateRandomString(128);
+    localStorage.setItem('code_verifier', codeVerifier);
     
-    print("Puzzle activity download complete.")
-    return True
-
-def download_user_ratings(token):
-    url = "https://lichess.org/api/account"
-    headers = {
-        "Authorization": f"Bearer {token}",
-    }
-
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print(f"Error fetching ratings: {response.status_code} - {response.text}")
-        return
-
-    data = response.json()
-    ratings = {
-        "puzzle": data.get("perfs", {}).get("puzzle", {}),
-        "rapid": data.get("perfs", {}).get("rapid", {}),
-        "classical": data.get("perfs", {}).get("classical", {}),
-    }
-    with open("my_lichess_ratings.json", "w", encoding="utf-8") as file:
-        json.dump(ratings, file, indent=4)
+    const digest = await sha256(codeVerifier);
+    const codeChallenge = base64urlEncode(new Uint8Array(digest));
     
-    print("User ratings snapshot saved.")
-
-if __name__ == "__main__":
-    token = input("Enter your Lichess personal access token (with 'puzzle:read' and 'preference:read' scopes): ")
-    max_entries = input("Enter max number of entries to download (optional, press Enter for all): ")
-    max_entries = int(max_entries) if max_entries else None
+    const state = generateRandomString(16);
+    localStorage.setItem('oauth_state', state);
     
-    if download_puzzle_activity(token, max_entries):
-        download_user_ratings(token)
-    print("Files saved: 'my_lichess_puzzle_activity.ndjson' and 'my_lichess_ratings.json'. Send both to the researcher.")</code></pre>
+    const clientId = 'puzzle-research-app'; // Arbitrary unique ID
+    const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html'; // Your repo URL + /download.html
+    const scopes = 'puzzle:read preference:read';
+    
+    const authUrl = `https://lichess.org/oauth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
+    
+    window.location.href = authUrl;
+}
+</script>
     
     <h2>Privacy and Data Use</h2>
     <p>Your token is local-only. The files contain attempt data (e.g., dates, puzzle IDs, outcomes, puzzle ratings/themes) and rating snapshot. We'll anonymize by assigning a pseudonym and use only for research. Contact swasti.sunder.das@abdn.ac.uk or n.oren@abdn.ac.uk for questions.</p>
