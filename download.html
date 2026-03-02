@@ -63,28 +63,40 @@ async function handleOAuthCallback() {
     `;
     
     // Upload button: POST to Apps Script
-    document.getElementById('uploadBtn').addEventListener('click', async () => {
-        if (!confirm('This will upload your anonymized data directly to the researcher\'s secure Google Drive. Proceed?')) return;
-        
-        const formData = new FormData();
-        formData.append('activity_file', new Blob([activityData], { type: 'application/x-ndjson' }));
-        formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }));
-        
-        try {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbyAABXKE8eqeTANjSDbvTnM9ZJQlj2vKdFN3Qf6b8WRFr0DyqozyqCswZUXVOGqNRPeCQ/exec', {  // Replace with your web app URL
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (result.status === 'success') {
-                document.getElementById('status').textContent = 'Upload successful! Thank you.';
-            } else {
-                document.getElementById('status').textContent = 'Error: ' + result.message;
-            }
-        } catch (error) {
-            document.getElementById('status').textContent = 'Error: ' + error.message;
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+    if (!confirm('This will upload your anonymized data directly to the researcher\'s secure Google Drive. Proceed?')) return;
+    
+    // Convert strings to byte arrays (Int8Array)
+    function stringToByteArray(str) {
+        const encoder = new TextEncoder();
+        return Array.from(encoder.encode(str));
+    }
+    
+    const payload = {
+        activity_bytes: stringToByteArray(activityData),
+        activity_mimeType: 'application/x-ndjson',
+        ratings_bytes: stringToByteArray(ratingsJson),
+        ratings_mimeType: 'application/json'
+    };
+    
+    try {
+        const response = await fetch('YOUR_APPS_SCRIPT_URL_HERE', {  // Use /exec URL
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        console.log('Response:', result);  // Check browser console
+        if (result.status === 'success') {
+            document.getElementById('status').textContent = 'Upload successful! Thank you.';
+        } else {
+            document.getElementById('status').textContent = 'Error: ' + result.message;
         }
-    });
+    } catch (error) {
+        console.error('Fetch error:', error);
+        document.getElementById('status').textContent = 'Error: ' + error.message;
+    }
+});
     
     // Clean up
     localStorage.removeItem('code_verifier');
