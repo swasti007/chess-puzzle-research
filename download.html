@@ -80,7 +80,7 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
     };
     
     try {
-        const response = await fetch('YOUR_APPS_SCRIPT_URL_HERE', {  // Use /exec URL
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxNZIj2HsBYEd0ydDzMRglelN0jsJo1BJ4dK55Na3fu2Ioz3ghKFxYRwbXpjy0vFGK-Dw/exec', {  // Use /exec URL
             method: 'POST',
             body: JSON.stringify(payload),
             headers: { 'Content-Type': 'application/json' }
