@@ -55,50 +55,34 @@ async function handleOAuthCallback() {
     };
     const ratingsJson = JSON.stringify(ratings, null, 2);
     
-    // Display upload button
-    document.body.innerHTML += `
-        <p>Data fetched successfully! Click below to upload anonymously to the researcher's secure Google Drive.</p>
-        <button id="uploadBtn">Upload to Researcher</button>
-        <p id="status"></p>
-    `;
-    
-    // Upload button: POST to Apps Script
-document.getElementById('uploadBtn').addEventListener('click', async () => {
-    if (!confirm('This will upload your anonymized data directly to the researcher\'s secure Google Drive. Proceed?')) return;
-    
-    // Convert strings to byte arrays (Int8Array)
-    function stringToByteArray(str) {
-        const encoder = new TextEncoder();
-        return Array.from(encoder.encode(str));
-    }
-    
-    const payload = {
-        activity_bytes: stringToByteArray(activityData),
-        activity_mimeType: 'application/x-ndjson',
-        ratings_bytes: stringToByteArray(ratingsJson),
-        ratings_mimeType: 'application/json'
-    };
-    
-    try {
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbyAABXKE8eqeTANjSDbvTnM9ZJQlj2vKdFN3Qf6b8WRFr0DyqozyqCswZUXVOGqNRPeCQ/exec';  // Your Apps Script URL
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(scriptUrl)}`;
-        const response = await fetch(proxyUrl, {
+    // Upload to file.io and get links
+    async function uploadToFileIo(data, filename, type) {
+        const formData = new FormData();
+        formData.append('file', new Blob([data], { type }), filename);
+        formData.append('expires', '1d'); // Expire after 1 day for privacy
+        
+        const response = await fetch('https://file.io/', {
             method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'application/json' }
+            body: formData
         });
-        const result = await response.json();
-        console.log('Response:', result);
-        if (result.status === 'success') {
-            document.getElementById('status').textContent = 'Upload successful! Thank you.';
-        } else {
-            document.getElementById('status').textContent = 'Error: ' + result.message;
-        }
-    } catch (error) {
-        console.error('Fetch error:', error);
-        document.getElementById('status').textContent = 'Error: ' + error.message;
+        if (!response.ok) throw new Error('Upload failed');
+        const { link } = await response.json();
+        return link;
     }
-});
+    
+    let activityLink, ratingsLink;
+    try {
+        activityLink = await uploadToFileIo(activityData, 'my_lichess_puzzle_activity.ndjson', 'application/x-ndjson');
+        ratingsLink = await uploadToFileIo(ratingsJson, 'my_lichess_ratings.json', 'application/json');
+        
+        document.body.innerHTML += `
+            <p>Data uploaded anonymously! Copy these temporary links and send them to the researcher (swasti.sunder.das@abdn.ac.uk):</p>
+            <p>Activity Link: <a href="${activityLink}" target="_blank">${activityLink}</a></p>
+            <p>Ratings Link: <a href="${ratingsLink}" target="_blank">${ratingsLink}</a></p>
+        `;
+    } catch (error) {
+        document.body.innerHTML += '<p>Error uploading: ' + error.message + '</p>';
+    }
     
     // Clean up
     localStorage.removeItem('code_verifier');
