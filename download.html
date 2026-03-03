@@ -95,7 +95,7 @@ async function handleOAuthCallback() {
             };
             
             try {
-                const response = await fetch('YOUR_APPS_SCRIPT_URL_HERE', {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbyTA_3Wrrp-Jo-Ih0GNVrqNE7uCpsCCk5_nFblHZhtNbqTq6Mjmt2ILfe4GxlORQwLkkg/exec', {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'application/json' }
