@@ -76,18 +76,20 @@ async function handleOAuthCallback() {
         <p id="status"></p>
     `;
     
-    // Upload button: POST to Apps Script
+    // Upload button: POST as JSON with base64
     document.getElementById('uploadBtn').addEventListener('click', async () => {
-        if (!confirm('This will upload your anonymized data directly to the researcher\'s secure Google Drive. Proceed?')) return;
+        if (!confirm('This will upload your anonymized data directly to the researcher's secure Google Drive. Proceed?')) return;
         
-        const formData = new FormData();
-        formData.append('activity_file', new Blob([activityData], { type: 'application/x-ndjson' }));
-        formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }));
+        const payload = {
+            activity_data: btoa(unescape(encodeURIComponent(activityData))),  // Handle special characters
+            ratings_data: btoa(unescape(encodeURIComponent(ratingsJson)))
+        };
         
         try {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbyqYwrRcMzHSnC9JX-u0lGkDF6fFsfJJjqE4a00Z8FiePiTvRcqhcRrJf73PNj0_VdG6g/exec', {
+            const response = await fetch('YOUR_APPS_SCRIPT_URL_HERE', {
                 method: 'POST',
-                body: formData
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' }
             });
             const result = await response.json();
             if (result.status === 'success') {
