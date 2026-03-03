@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Puzzle Research Volunteer Data Sharing</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { text-align: center; }
-        pre { background: #f4f4f4; padding: 10px; overflow: auto; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        h1 { text-align: center; color: #333; }
+        h2 { color: #555; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #45a049; }
+        p { margin-bottom: 15px; }
+        ol { margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -30,12 +34,14 @@
     <ol>
         <li>Click the button below to authorize with Lichess (you must be logged in there).</li>
         <li>Grant permission for "Read puzzle activity" and "Read preferences" (ratings).</li>
-        <li>The page will fetch your data and upload it anonymously to the researcher's secure cloud.</li>
+        <li>The page will fetch your data and provide an option to send it anonymously to the researcher via secure email (no manual emailing needed).</li>
     </ol>
-    <button onclick="startOAuthFlow()">Start Data Upload</button>
+    <button onclick="startOAuthFlow()">Start Data Sharing</button>
 
-    <h2>Privacy Note</h2>
-    <p>This runs entirely in your browser—no data is sent to any server except Lichess's API and the secure upload endpoint. You control what you share.</p>
+    <h2>Privacy and Data Use</h2>
+    <p>Your token is local-only. The files contain attempt data (e.g., dates, puzzle IDs, outcomes, puzzle ratings/themes) and rating snapshot. We'll anonymize by assigning a pseudonym and use only for research. Contact swasti.sunder.das@abdn.ac.uk or n.oren@abdn.ac.uk for questions.</p>
+    
+    <p>Thanks for supporting chess research!</p>
 
     <script>
     function base64urlEncode(array) {
@@ -68,8 +74,8 @@
         const state = generateRandomString(16);
         localStorage.setItem('oauth_state', state);
         
-        const clientId = 'puzzle-research-app'; // Arbitrary unique ID
-        const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html'; // Your repo URL + /download.html
+        const clientId = 'puzzle-research-app';
+        const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html';
         const scopes = 'puzzle:read preference:read';
         
         const authUrl = `https://lichess.org/oauth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
