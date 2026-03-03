@@ -1,53 +1,81 @@
-<h2>Instructions</h2>
-<p>To share your data easily without running code:</p>
-<ol>
-    <li>Click the button below to authorize with Lichess (you must be logged in there).</li>
-    <li>Grant permission for "Read puzzle activity" and "Read preferences" (ratings).</li>
-    <li>The page will fetch your data and provide download links for the two files.</li>
-    <li>Download and email them to swasti.sunder.das@abdn.ac.uk.</li>
-</ol>
-<button onclick="startOAuthFlow()">Start Data Download</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Puzzle Research Volunteer Data Sharing</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; }
+        pre { background: #f4f4f4; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Volunteer Your Lichess Puzzle Activity for Academic Research</h1>
+    
+    <h2>Project Description</h2>
+    <p>This research, conducted by Swasti Sunder Das (MSc Artificial Intelligence, University of Aberdeen), supervised by Professor Nir Oren, models chess puzzle performance to estimate player strength from attempt behavior (e.g., success rates by difficulty/theme). We use public Lichess puzzle data but need anonymized attempt outcomes for analysis.</p>
+    
+    <h2>Ethics Permission</h2>
+    <p>This study has been approved by the University of Aberdeen Ethics Committee (approval reference: CERB/2026/001). We follow ethical guidelines for voluntary participation, data privacy, and anonymization, compliant with GDPR.</p>
+    
+    <h2>Consent and Participation</h2>
+    <p>By sharing your data, you consent to its use in this research. Participation is voluntary; you can limit entries (e.g., recent attempts only). Data is anonymized—no usernames or identifiers are needed. No compensation provided.</p>
+    
+    <h2>How to Withdraw Consent</h2>
+    <p>To withdraw, email swasti.sunder.das@abdn.ac.uk with a description of your submission (e.g., approximate number of attempts). We'll delete your data within 30 days. Withdrawal won't affect aggregated results.</p>
+    
+    <h2>Instructions</h2>
+    <p>To share your data easily without running code:</p>
+    <ol>
+        <li>Click the button below to authorize with Lichess (you must be logged in there).</li>
+        <li>Grant permission for "Read puzzle activity" and "Read preferences" (ratings).</li>
+        <li>The page will fetch your data and upload it anonymously to the researcher's secure cloud.</li>
+    </ol>
+    <button onclick="startOAuthFlow()">Start Data Upload</button>
 
-<h2>Privacy Note</h2>
-<p>This runs entirely in your browser—no data is sent to any server except Lichess's API. You control what you email.</p>
+    <h2>Privacy Note</h2>
+    <p>This runs entirely in your browser—no data is sent to any server except Lichess's API and the secure upload endpoint. You control what you share.</p>
 
-<script>
-function base64urlEncode(array) {
-    return btoa(String.fromCharCode.apply(null, array))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function sha256(plain) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    return crypto.subtle.digest('SHA-256', data);
-}
-
-function generateRandomString(length) {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-    let str = '';
-    for (let i = 0; i < length; i++) {
-        str += charset.charAt(Math.floor(Math.random() * charset.length));
+    <script>
+    function base64urlEncode(array) {
+        return btoa(String.fromCharCode.apply(null, array))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
-    return str;
-}
 
-async function startOAuthFlow() {
-    const codeVerifier = generateRandomString(128);
-    localStorage.setItem('code_verifier', codeVerifier);
-    
-    const digest = await sha256(codeVerifier);
-    const codeChallenge = base64urlEncode(new Uint8Array(digest));
-    
-    const state = generateRandomString(16);
-    localStorage.setItem('oauth_state', state);
-    
-    const clientId = 'puzzle-research-app'; // Arbitrary unique ID
-    const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html'; // Your repo URL + /download.html
-    const scopes = 'puzzle:read preference:read';
-    
-    const authUrl = `https://lichess.org/oauth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
-    
-    window.location.href = authUrl;
-}
-</script>
+    async function sha256(plain) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(plain);
+        return crypto.subtle.digest('SHA-256', data);
+    }
+
+    function generateRandomString(length) {
+        const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+        let str = '';
+        for (let i = 0; i < length; i++) {
+            str += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        return str;
+    }
+
+    async function startOAuthFlow() {
+        const codeVerifier = generateRandomString(128);
+        localStorage.setItem('code_verifier', codeVerifier);
+        
+        const digest = await sha256(codeVerifier);
+        const codeChallenge = base64urlEncode(new Uint8Array(digest));
+        
+        const state = generateRandomString(16);
+        localStorage.setItem('oauth_state', state);
+        
+        const clientId = 'puzzle-research-app'; // Arbitrary unique ID
+        const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html'; // Your repo URL + /download.html
+        const scopes = 'puzzle:read preference:read';
+        
+        const authUrl = `https://lichess.org/oauth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge=${codeChallenge}&code_challenge_method=S256&state=${state}`;
+        
+        window.location.href = authUrl;
+    }
+    </script>
+</body>
+</html>
