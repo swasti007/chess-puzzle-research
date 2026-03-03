@@ -69,49 +69,31 @@ async function handleOAuthCallback() {
     };
     const ratingsJson = JSON.stringify(ratings, null, 2);
     
-    // Display buttons for download (optional) and send
+    // Display upload button
     document.body.innerHTML += `
-        <p>Data fetched successfully! You can download or send directly.</p>
-        <button id="downloadBtn">Download Files Locally</button>
-        <button id="sendBtn">Send to Researcher (Anonymized)</button>
+        <p>Data fetched successfully! Click below to upload anonymously to the researcher's secure Google Drive.</p>
+        <button id="uploadBtn">Upload to Researcher</button>
         <p id="status"></p>
     `;
     
-    // Download button (as before, optional)
-    document.getElementById('downloadBtn').addEventListener('click', () => {
-        function downloadFile(filename, content, type) {
-            const blob = new Blob([content], { type });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-        downloadFile('my_lichess_puzzle_activity.ndjson', activityData, 'application/x-ndjson');
-        downloadFile('my_lichess_ratings.json', ratingsJson, 'application/json');
-    });
-    
-    // Send button: Post to StaticForms
-    document.getElementById('sendBtn').addEventListener('click', async () => {
-        if (!confirm('This will send your anonymized puzzle data to the researcher via email. No personal identifiers are included. Proceed?')) return;
+    // Upload button: POST to Apps Script
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+        if (!confirm('This will upload your anonymized data directly to the researcher\'s secure Google Drive. Proceed?')) return;
         
         const formData = new FormData();
-        formData.append('apiKey', 'sf_gd09el8i3idl15jijb5f3f28'); // Replace with your actual API key
-        formData.append('activity_file', new Blob([activityData], { type: 'application/x-ndjson' }), 'my_lichess_puzzle_activity.ndjson');
-        formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }), 'my_lichess_ratings.json');
-        // Optional: Add a note field if you want user input, e.g., formData.append('note', 'My puzzle count: 100');
+        formData.append('activity_file', new Blob([activityData], { type: 'application/x-ndjson' }));
+        formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }));
         
         try {
-            const response = await fetch('https://api.staticforms.dev/submit', {
+            const response = await fetch('https://script.google.com/macros/s/AKfycbz8-Oz6n2uPo4Ia5Yyr20W4w_gRygIZDvuFpwtWvj9WWCCVLZpzTRrnGwLD1PwCB2YA/exec', {  // Replace with your web app URL
                 method: 'POST',
                 body: formData
             });
-            if (response.ok) {
-                document.getElementById('status').textContent = 'Data sent successfully! Thank you.';
+            const result = await response.json();
+            if (result.status === 'success') {
+                document.getElementById('status').textContent = 'Upload successful! Thank you.';
             } else {
-                document.getElementById('status').textContent = 'Error sending: ' + await response.text();
+                document.getElementById('status').textContent = 'Error: ' + result.message;
             }
         } catch (error) {
             document.getElementById('status').textContent = 'Error: ' + error.message;
