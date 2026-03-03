@@ -85,7 +85,7 @@ async function handleOAuthCallback() {
         formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }));
         
         try {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbz8-Oz6n2uPo4Ia5Yyr20W4w_gRygIZDvuFpwtWvj9WWCCVLZpzTRrnGwLD1PwCB2YA/exec', {  // Replace with your web app URL
+            const response = await fetch('https://script.google.com/macros/s/AKfycbyqYwrRcMzHSnC9JX-u0lGkDF6fFsfJJjqE4a00Z8FiePiTvRcqhcRrJf73PNj0_VdG6g/exec', {
                 method: 'POST',
                 body: formData
             });
