@@ -12,104 +12,110 @@
     <h1>Downloading Your Data...</h1>
     <p>If nothing happens, ensure pop-ups are allowed and try again from the main page.</p>
     
-    <script>
-    async function handleOAuthCallback() {
-        document.body.innerHTML += '<p>Fetching data...</p>';
+    ```html
+<script>
+async function handleOAuthCallback() {
+    document.body.innerHTML += '<p>Starting process...</p>';
+    
+    try {
+        document.body.innerHTML += '<p>Parsing parameters...</p>';
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
         
-        try {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-            const state = params.get('state');
-            
-            const storedState = localStorage.getItem('oauth_state');
-            if (state !== storedState) {
-                document.body.innerHTML += '<p>Error: State mismatch - possible security issue. Please try again from the main page.</p>';
-                return;
-            }
-            
-            const codeVerifier = localStorage.getItem('code_verifier');
-            const clientId = 'puzzle-research-app';
-            const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html';
-            
-            // Exchange code for token
-            const tokenResponse = await fetch('https://lichess.org/api/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: redirectUri,
-                    client_id: clientId,
-                    code_verifier: codeVerifier
-                })
-            });
-            
-            if (!tokenResponse.ok) {
-                document.body.innerHTML += '<p>Error getting token: ' + await tokenResponse.text() + '</p>';
-                return;
-            }
-            
-            const { access_token } = await tokenResponse.json();
-            
-            // Fetch puzzle activity (NDJSON as string)
-            const activityResponse = await fetch('https://lichess.org/api/puzzle/activity', {
-                headers: {
-                    Authorization: `Bearer ${access_token}`,
-                    Accept: 'application/x-ndjson'
-                }
-            });
-            if (!activityResponse.ok) {
-                document.body.innerHTML += '<p>Error fetching activity: ' + await activityResponse.text() + '</p>';
-                return;
-            }
-            const activityData = await activityResponse.text();
-            
-            // Fetch ratings (JSON as string)
-            const ratingsResponse = await fetch('https://lichess.org/api/account', {
-                headers: { Authorization: `Bearer ${access_token}` }
-            });
-            if (!ratingsResponse.ok) {
-                document.body.innerHTML += '<p>Error fetching ratings: ' + await ratingsResponse.text() + '</p>';
-                return;
-            }
-            const accountData = await ratingsResponse.json();
-            const ratings = {
-                puzzle: accountData.perfs?.puzzle || {},
-                rapid: accountData.perfs?.rapid || {},
-                classical: accountData.perfs?.classical || {}
-            };
-            const ratingsJson = JSON.stringify(ratings, null, 2);
-            
-            document.body.innerHTML += '<p>Data fetched successfully! Uploading anonymously to the researcher's secure Google Drive...</p>';
-            
-            const formData = new FormData();
-            formData.append('activity_file', new Blob([activityData], { type: 'application/x-ndjson' }));
-            formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }));
-            
-            const response = await fetch('https://script.google.com/macros/s/AKfycbyW5dJrS_5l680nqmtiqZro_Cajxgyp1eX_58TpsGb8lNbZrxUpiS1quxiKoxmQC9ANMA/exec', {
-                method: 'POST',
-                body: formData
-            });
-            if (!response.ok) {
-                document.body.innerHTML += '<p>Error during upload: ' + await response.text() + '</p>';
-                return;
-            }
-            const result = await response.json();
-            if (result.status === 'success') {
-                document.body.innerHTML += '<p>Upload successful! Thank you.</p>';
-            } else {
-                document.body.innerHTML += '<p>Error: ' + result.message + '</p>';
-            }
-            
-            // Clean up
-            localStorage.removeItem('code_verifier');
-            localStorage.removeItem('oauth_state');
-        } catch (error) {
-            document.body.innerHTML += '<p>General error: ' + error.message + '</p>';
+        document.body.innerHTML += '<p>Checking state...</p>';
+        const storedState = localStorage.getItem('oauth_state');
+        if (state !== storedState) {
+            document.body.innerHTML += '<p>Error: State mismatch - possible security issue. Please try again from the main page.</p>';
+            return;
         }
+        
+        const codeVerifier = localStorage.getItem('code_verifier');
+        const clientId = 'puzzle-research-app';
+        const redirectUri = 'https://swasti007.github.io/chess-puzzle-research/download.html';
+        
+        document.body.innerHTML += '<p>Exchanging code for token...</p>';
+        // Exchange code for token
+        const tokenResponse = await fetch('https://lichess.org/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: redirectUri,
+                client_id: clientId,
+                code_verifier: codeVerifier
+            })
+        });
+        
+        if (!tokenResponse.ok) {
+            document.body.innerHTML += '<p>Error getting token: ' + await tokenResponse.text() + '</p>';
+            return;
+        }
+        
+        const { access_token } = await tokenResponse.json();
+        
+        document.body.innerHTML += '<p>Fetching puzzle activity...</p>';
+        // Fetch puzzle activity (NDJSON as string)
+        const activityResponse = await fetch('https://lichess.org/api/puzzle/activity', {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+                Accept: 'application/x-ndjson'
+            }
+        });
+        if (!activityResponse.ok) {
+            document.body.innerHTML += '<p>Error fetching activity: ' + await activityResponse.text() + '</p>';
+            return;
+        }
+        const activityData = await activityResponse.text();
+        
+        document.body.innerHTML += '<p>Fetching ratings...</p>';
+        // Fetch ratings (JSON as string)
+        const ratingsResponse = await fetch('https://lichess.org/api/account', {
+            headers: { Authorization: `Bearer ${access_token}` }
+        });
+        if (!ratingsResponse.ok) {
+            document.body.innerHTML += '<p>Error fetching ratings: ' + await ratingsResponse.text() + '</p>';
+            return;
+        }
+        const accountData = await ratingsResponse.json();
+        const ratings = {
+            puzzle: accountData.perfs?.puzzle || {},
+            rapid: accountData.perfs?.rapid || {},
+            classical: accountData.perfs?.classical || {}
+        };
+        const ratingsJson = JSON.stringify(ratings, null, 2);
+        
+        document.body.innerHTML += '<p>Data fetched successfully! Uploading anonymously to the researcher's secure Google Drive...</p>';
+        
+        const formData = new FormData();
+        formData.append('activity_file', new Blob([activityData], { type: 'application/x-ndjson' }));
+        formData.append('ratings_file', new Blob([ratingsJson], { type: 'application/json' }));
+        
+        const response = await fetch('YOUR_APPS_SCRIPT_URL_HERE', {
+            method: 'POST',
+            body: formData
+        });
+        if (!response.ok) {
+            document.body.innerHTML += '<p>Error during upload: ' + await response.text() + '</p>';
+            return;
+        }
+        const result = await response.json();
+        if (result.status === 'success') {
+            document.body.innerHTML += '<p>Upload successful! Thank you.</p>';
+        } else {
+            document.body.innerHTML += '<p>Error: ' + result.message + '</p>';
+        }
+        
+        // Clean up
+        localStorage.removeItem('code_verifier');
+        localStorage.removeItem('oauth_state');
+    } catch (error) {
+        document.body.innerHTML += '<p>General error: ' + error.message + '</p>';
     }
+}
 
-    handleOAuthCallback();
-    </script>
+handleOAuthCallback();
+</script>
 </body>
 </html>
